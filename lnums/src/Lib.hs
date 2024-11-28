@@ -4,12 +4,14 @@ module Lib
     numberAllLines,
     numberNonEmptyLines,
     numberAndIncrementNonEmptyLines,
+    PadMode (..),
     padRight,
     padLeft,
     padCenter,
     zip',
     zipWith',
     zip'',
+    prettyNumberedLines,
   )
 where
 
@@ -89,3 +91,11 @@ zipWith' f (x : xs) (y : ys) = f x y : zipWith' f xs ys
 
 zip'' :: [a] -> [b] -> [(a, b)]
 zip'' = zipWith' (,)
+
+prettyNumberedLines :: PadMode -> NumberedLines -> [String]
+prettyNumberedLines mode lineNums =
+  let (numbers, text) = unzip lineNums
+      numberStrings = map (maybe "" show) numbers
+      maxLength = maximum (map length numberStrings)
+      paddedNumbers = map (pad mode maxLength) numberStrings
+   in zipWith (\n l -> n ++ " " ++ l) paddedNumbers text
