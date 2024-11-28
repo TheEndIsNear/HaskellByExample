@@ -7,6 +7,9 @@ module Lib
     padRight,
     padLeft,
     padCenter,
+    zip',
+    zipWith',
+    zip'',
   )
 where
 
@@ -73,3 +76,16 @@ padRight = pad PadRight
 
 padCenter :: Int -> String -> String
 padCenter = pad PadCenter
+
+zip' :: [a] -> [b] -> [(a, b)]
+zip' [] _ = []
+zip' _ [] = []
+zip' (x : xs) (y : ys) = (x, y) : zip' xs ys
+
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' _ [] _ = []
+zipWith' _ _ [] = []
+zipWith' f (x : xs) (y : ys) = f x y : zipWith' f xs ys
+
+zip'' :: [a] -> [b] -> [(a, b)]
+zip'' = zipWith' (,)
