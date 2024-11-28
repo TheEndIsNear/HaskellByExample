@@ -1,31 +1,46 @@
 module Lib
-  ( parseArguments,
-    readLines,
-    numberAllLines,
-    numberNonEmptyLines,
-    numberAndIncrementNonEmptyLines,
-    PadMode (..),
-    padRight,
-    padLeft,
-    padCenter,
-    zip',
-    zipWith',
-    zip'',
-    prettyNumberedLines,
-  )
-where
+  ( parseArguments
+  , readLines
+  , numberAllLines
+  , numberNonEmptyLines
+  , numberAndIncrementNonEmptyLines
+  , PadMode(..)
+  , padLeft
+  , padRight
+  , padCenter
+  , prettyNumberedLines
+  , LineNumberOptions(..)
+  ) where
 
 import Data.Char
+import Data.Maybe (mapMaybe)
 
 type NumberedLine = (Maybe Int, String)
 
 type NumberedLines = [NumberedLine]
 
-data PadMode = PadLeft | PadRight | PadCenter
+data PadMode
+  = PadLeft
+  | PadRight
+  | PadCenter
 
-parseArguments :: [String] -> Maybe FilePath
-parseArguments [filepath] = Just filepath
-parseArguments _ = Nothing
+data LineNumberOptions
+  = ReverseNumbering
+  | SkipEmptyLines
+  | LeftAlign
+  deriving (Eq)
+
+parseArguments :: [String] -> (Maybe FilePath, [LineNumberOptions])
+parseArguments args =
+  case reverse args of
+    [] -> (Nothing, [])
+    (filename:options) -> (Just filename, mapMaybe lnOptionsFromString options)
+
+lnOptionsFromString :: String -> Maybe LineNumberOptions
+lnOptionsFromString "--reverse" = Just ReverseNumbering
+lnOptionsFromString "--skip-empty" = Just SkipEmptyLines
+lnOptionsFromString "--left-align" = Just LeftAlign
+lnOptionsFromString _ = Nothing
 
 readLines :: FilePath -> IO [String]
 readLines filePath = do
@@ -33,9 +48,7 @@ readLines filePath = do
   return (lines contents)
 
 isEmpty :: String -> Bool
-isEmpty str =
-  null str
-    || all (\s -> not (isPrint s) || isSeparator s) str
+isEmpty str = null str || all (\s -> not (isPrint s) || isSeparator s) str
 
 isNotEmpty :: String -> Bool
 isNotEmpty = not . isEmpty
@@ -44,9 +57,15 @@ numberLines :: (String -> Bool) -> (String -> Bool) -> [String] -> NumberedLines
 numberLines shouldIncr shouldNumber text =
   let go :: Int -> [String] -> NumberedLines
       go _ [] = []
-      go counter (x : xs) =
-        let mNumbering = if shouldNumber x then Just counter else Nothing
-            newCounter = if shouldIncr x then counter + 1 else counter
+      go counter (x:xs) =
+        let mNumbering =
+              if shouldNumber x
+                then Just counter
+                else Nothing
+            newCounter =
+              if shouldIncr x
+                then counter + 1
+                else counter
          in (mNumbering, x) : go newCounter xs
    in go 1 text
 
@@ -78,19 +97,6 @@ padRight = pad PadRight
 
 padCenter :: Int -> String -> String
 padCenter = pad PadCenter
-
-zip' :: [a] -> [b] -> [(a, b)]
-zip' [] _ = []
-zip' _ [] = []
-zip' (x : xs) (y : ys) = (x, y) : zip' xs ys
-
-zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
-zipWith' _ [] _ = []
-zipWith' _ _ [] = []
-zipWith' f (x : xs) (y : ys) = f x y : zipWith' f xs ys
-
-zip'' :: [a] -> [b] -> [(a, b)]
-zip'' = zipWith' (,)
 
 prettyNumberedLines :: PadMode -> NumberedLines -> [String]
 prettyNumberedLines mode lineNums =
